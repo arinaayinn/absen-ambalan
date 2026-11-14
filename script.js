@@ -466,3 +466,56 @@ function saveSettings(e) {
 
     showToast("Pengaturan profil berhasil disimpan!", "success");
 }
+
+// --- MODifikasi: Kapsul Kirim Absen ke Database PHP ---
+function captureAndSubmitAttendance() {
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} WIB`;
+    const dateStr = `Jumat, ${now.getDate()} Nov 2026`;
+
+    attendanceData.todayStatus = true;
+    attendanceData.timeHadir = timeStr;
+    attendanceData.photoUrl = "https://placehold.co/400x300/dc2626/ffffff?text=Absen+Jumat+" + encodeURIComponent(currentUser.name);
+    
+    // Data yang akan dikirim ke server (PHP & MySQL)
+    const payload = {
+        user_id: currentUser.id || 1, // Pastikan ID user sesuai dari database
+        activity_type: "Absen Hadir Pengibaran",
+        status: "Hadir",
+        time: timeStr,
+        date: dateStr,
+        photo_url: attendanceData.photoUrl
+    };
+
+    // Kirim data menggunakan Fetch API ke backend PHP
+    fetch('proses_absen.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.status === 'success') {
+            showToast("Absen Hadir Pengibaran Berhasil Disimpan ke Database!", "success");
+        } else {
+            showToast("Gagal menyimpan ke database: " + data.message, "error");
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast("Terjadi kesalahan koneksi server.", "error");
+    });
+
+    attendanceData.history.unshift({
+        date: dateStr,
+        type: "Absen Hadir Pengibaran",
+        status: "Hadir",
+        time: timeStr,
+        photo: attendanceData.photoUrl
+    });
+
+    closeCameraModal();
+    renderDewanDashboard();
+}
