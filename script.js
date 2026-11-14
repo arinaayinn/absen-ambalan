@@ -519,3 +519,45 @@ function captureAndSubmitAttendance() {
     closeCameraModal();
     renderDewanDashboard();
 }
+
+function handleLogin(e) {
+    e.preventDefault();
+    const role = document.getElementById('login-role-input').value;
+    const name = document.getElementById('login-username').value.trim();
+    const pasukan = document.getElementById('login-class').value;
+
+    if (!name) {
+        showToast("Nama tidak boleh kosong!", "error");
+        return;
+    }
+
+    // Kirim data ke backend PHP agar semua nama bisa masuk & tersimpan otomatis
+    fetch('proses_login.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, role: role, pasukan: pasukan })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.status === 'success') {
+            currentUser.id = data.user_id; // Simpan ID database user
+            currentUser.role = role;
+            currentUser.name = name;
+            currentUser.pasukan = pasukan;
+            currentUser.avatar = name.substring(0, 2).toUpperCase();
+
+            executeLoginSuccess();
+        } else {
+            showToast("Gagal login: " + data.message, "error");
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Fallback jika dijalankan tanpa server PHP lokal
+        currentUser.role = role;
+        currentUser.name = name;
+        currentUser.pasukan = pasukan;
+        currentUser.avatar = name.substring(0, 2).toUpperCase();
+        executeLoginSuccess();
+    });
+}
